@@ -5,8 +5,10 @@
 !.gitignore
 !README.md
 !experiments/
+experiments/*
 !experiments/README.md
 !experiments/*.py
 !vrih_experiment_hub/
+vrih_experiment_hub/*
 !vrih_experiment_hub/src/
 !vrih_experiment_hub/src/**
