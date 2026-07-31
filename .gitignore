@@ -1,36 +1,12 @@
-# Manuscript and submission artifacts
-*.aux
-*.bbl
-*.blg
-*.log
-*.out
-*.pdf
-*.synctex.gz
-VRIH_Paper*.tex
-response*
-coverletter*
-revision_submission_materials/
-
-# Data, model weights, generated outputs, and local project links
-experiments/data/
-experiments/results/
-vrih_experiment_hub/links/
-vrih_experiment_hub/logs/
-vrih_experiment_hub/results/
-vrih_experiment_hub/optional/
-*.pth
-*.pt
-*.ckpt
-*.h5
-*.hdf5
-*.mp4
-*.avi
-*.zip
-
-# Private/local configuration
-vrih_experiment_hub/config/paths.ps1
-__pycache__/
-*.py[cod]
-.venv/
-.idea/
-.vscode/
+# This GitHub release intentionally contains code and documentation only.
+# It excludes manuscript sources, PDFs, data, model checkpoints, outputs,
+# local paths, and all other workspace files.
+*
+!.gitignore
+!README.md
+!experiments/
+!experiments/README.md
+!experiments/*.py
+!vrih_experiment_hub/
+!vrih_experiment_hub/src/
+!vrih_experiment_hub/src/**
