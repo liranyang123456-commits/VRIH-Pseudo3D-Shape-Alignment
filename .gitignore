@@ -12,3 +12,5 @@ experiments/*
 vrih_experiment_hub/*
 !vrih_experiment_hub/src/
 !vrih_experiment_hub/src/**
+**/__pycache__/
+*.py[cod]
