@@ -48,11 +48,11 @@ def main() -> None:
         r"\title{\rev{Nonrigid-Assisted Pseudo-3D Shape Alignment for Endoscopic Image Sequences}}{\rev{Nonrigid-Assisted Pseudo-3D Shape Alignment for Endoscopic Image Sequences}}",
     )
 
-    # Abstract
-    m = re.search(r"\\abstract\{(.*?)\}", src, flags=re.S)
+    # Abstract (match to the closing brace on its own line to survive nested braces)
+    m = re.search(r"\\abstract\{(.*?)\n\}", src, flags=re.S)
     if not m:
         raise SystemExit("no abstract")
-    src = src.replace(m.group(0), r"\abstract{\rev{" + m.group(1) + "}}", 1)
+    src = src.replace(m.group(0), r"\abstract{\rev{" + m.group(1) + "}\n}", 1)
 
     # Keywords
     src = wrap_exact(
