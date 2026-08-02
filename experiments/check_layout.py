@@ -22,13 +22,10 @@ def main() -> None:
         return
     doc = fitz.open(PDF)
     print("pages:", doc.page_count)
-    for i in range(doc.page_count):
-        page = doc[i]
-        pix = page.get_pixmap(dpi=60)
-        pix.save(str(OUT / f"page_{i + 1:02d}.png"))
-        # report text overflow markers: content beyond margins is hard to detect
-        # automatically, so we save pages for manual inspection
-    print(f"rendered {doc.page_count} pages to {OUT}")
+    pages = range(doc.page_count) if len(sys.argv) < 2 else [int(a) - 1 for a in sys.argv[1:]]
+    for i in pages:
+        doc[i].get_pixmap(dpi=60).save(str(OUT / f"page_{i + 1:02d}.png"))
+    print(f"rendered pages {[i + 1 for i in pages]}")
 
 
 if __name__ == "__main__":
