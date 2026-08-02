@@ -69,21 +69,24 @@ def main() -> None:
 The remainder of this paper is organized as follows. Section~\ref{sec:related} reviews related work on feature description/matching and camera pose estimation. Section~\ref{sec:methods} details the proposed methodology, including adaptive pseudo-3D mesh generation, the hybrid autoencoder, and non-rigid-assisted pose estimation. Section~\ref{sec:experiments} presents experiments and validation on diverse datasets, and Section~\ref{sec:conclusion} concludes with limitations, industrial and societal implications, and future work."""
     src = wrap_exact(src, block, r"\revstart" + "\n" + block + "\n" + r"\revend")
 
-    # Calibration / 2026 literature (R1/R3)
-    stereo_frag = (
-        "For binocular endoscopes and depth-aware navigation, stereo camera calibration "
-        "is equally fundamental: it establishes the inter-camera epipolar geometry and "
-        "metric scale through rectification and joint intrinsic/extrinsic estimation, "
-        "and remains a prerequisite for accurate metric 3D reconstruction~\\cite{43,26}."
+    # Calibration / 2026 literature (R1/R3)  [citation ids vary after renumbering]
+    stereo_pat = (
+        r"For binocular endoscopes and depth-aware navigation, stereo camera calibration "
+        r"is equally fundamental: it establishes the inter-camera epipolar geometry and "
+        r"metric scale through rectification and joint intrinsic/extrinsic estimation, "
+        r"and remains a prerequisite for accurate metric 3D reconstruction~\\cite\{\d+(?:,\d+)*\}\."
     )
-    if stereo_frag in src:
-        src = src.replace(stereo_frag, r"\rev{" + stereo_frag + "}", 1)
+    m = re.search(stereo_pat, src)
+    if m:
+        src = src.replace(m.group(0), r"\rev{" + m.group(0) + "}", 1)
     else:
         print("WARN: stereo frag missing")
 
-    bouguet = "Bouguet's Camera Calibration Toolbox~\\cite{42}"
-    if bouguet in src:
-        src = src.replace(bouguet, r"\rev{" + bouguet + "}", 1)
+    m = re.search(r"Bouguet's Camera Calibration Toolbox~\\cite\{\d+\}", src)
+    if m:
+        src = src.replace(m.group(0), r"\rev{" + m.group(0) + "}", 1)
+    else:
+        print("WARN: bouguet frag missing")
 
     m = re.search(
         r"Most recently, deformation-aware pose estimation and reconstruction for endoscopy have advanced rapidly\..*?our method addresses it from a complementary, interpretable pseudo-3D perspective that requires neither dense depth input nor per-scene neural training\.",
@@ -95,12 +98,15 @@ The remainder of this paper is organized as follows. Section~\ref{sec:related} r
     else:
         print("WARN: 2026 paragraph missing")
 
-    cite49 = (
-        ", and, more recently, semantic-guided area-to-point matching with geometric "
-        "consistency for accurate correspondence under ambiguous textures~\\cite{49}"
+    cite49_pat = (
+        r", and, more recently, semantic-guided area-to-point matching with geometric "
+        r"consistency for accurate correspondence under ambiguous textures~\\cite\{\d+\}"
     )
-    if cite49 in src:
-        src = src.replace(cite49, r"\rev{" + cite49 + "}", 1)
+    m = re.search(cite49_pat, src)
+    if m:
+        src = src.replace(m.group(0), r"\rev{" + m.group(0) + "}", 1)
+    else:
+        print("WARN: area-to-point frag missing")
 
     # Physical justification (R2.2)
     phys = r"""\textbf{Physical justification and robustness of the pseudo-3D representation.}
