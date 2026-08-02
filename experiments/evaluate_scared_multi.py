@@ -29,6 +29,7 @@ METHODS = {
     "Reloc3r": ("reloc3r_{seq}", "reloc3r_cumulative_4x4.txt"),
     "SIFT": ("sift_{seq}", "sift_cumulative_4x4.txt"),
     "AKAZE": ("akaze_{seq}", "akaze_cumulative_4x4.txt"),
+    "DetectorFreeSfM": ("detectorfreesfm_{seq}", "detectorfreesfm_cumulative_4x4.txt"),
 }
 
 
@@ -46,8 +47,14 @@ def main() -> None:
                 print(f"[warn] {seq}/{method}: missing trajectory {trajectory}")
                 continue
             metrics_path = result_dir / "pose_metrics.json"
+            # Pre-count registered poses so sparse-reconstruction failures are
+            # recorded as honest failure entries rather than raising.
+            n_registered = 0
+            json_sidecar = trajectory.with_suffix(".json")
+            if method == "DetectorFreeSfM" and json_sidecar.exists():
+                n_registered = json.loads(json_sidecar.read_text(encoding="utf-8"))["n_registered"]
             if not metrics_path.exists():
-                subprocess.run(
+                result = subprocess.run(
                     [
                         sys.executable,
                         str(ROOT / "evaluate_pose.py"),
@@ -56,10 +63,41 @@ def main() -> None:
                         "--output", str(metrics_path),
                         "--max-frames", "80",
                     ],
-                    check=True,
                     stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
                 )
+                if result.returncode != 0 and method == "DetectorFreeSfM":
+                    print(f"[fail-sparse] {seq}/{method}: only {n_registered}/80 registered")
+                    rows.append(
+                        {
+                            "sequence": seq,
+                            "method": method,
+                            "n_poses": n_registered,
+                            "ate_sim3_rmse_gt_units": "n/a (sparse model failed)",
+                            "relative_rotation_error_mean_deg": "n/a",
+                            "relative_translation_direction_error_mean_deg": "n/a",
+                        }
+                    )
+                    continue
+                result.check_returncode()
             payload = json.loads(metrics_path.read_text(encoding="utf-8"))
+            n_poses = payload["n_poses"]
+            if n_poses < 80 and method == "DetectorFreeSfM":
+                # The restricted coarse-stage reproduction cannot establish a
+                # sparse model on this weak-texture sequence: record the
+                # registration outcome as an honest failure entry.
+                print(f"[fail-sparse] {seq}/{method}: only {n_poses}/80 registered")
+                rows.append(
+                    {
+                        "sequence": seq,
+                        "method": method,
+                        "n_poses": n_poses,
+                        "ate_sim3_rmse_gt_units": "n/a (sparse model failed)",
+                        "relative_rotation_error_mean_deg": "n/a",
+                        "relative_translation_direction_error_mean_deg": "n/a",
+                    }
+                )
+                continue
             rotation = payload["relative_rotation_error_deg"]
             direction = payload["relative_translation_direction_error_deg"]
             rows.append(
@@ -83,9 +121,11 @@ def main() -> None:
         writer.writerows(rows)
     print(f"wrote {output} with {len(rows)} rows")
 
-    # aggregate per method across sequences
+    # aggregate per method across sequences (skip n/a failure entries)
     aggregate: dict[str, dict[str, list[float]]] = {}
     for row in rows:
+        if not str(row["ate_sim3_rmse_gt_units"]).replace(".", "").isdigit():
+            continue
         entry = aggregate.setdefault(str(row["method"]), {"ate": [], "rot": [], "dir": []})
         entry["ate"].append(float(row["ate_sim3_rmse_gt_units"]))
         entry["rot"].append(float(row["relative_rotation_error_mean_deg"]))
