@@ -53,18 +53,19 @@ def main() -> None:
         ax_xy.plot(aligned[:, 0], aligned[:, 1], color=color, label=label)
         ax_xz.plot(aligned[:, 0], aligned[:, 2], color=color, label=label)
 
-    ax_xy.set_title("XY trajectory after Sim(3) alignment")
-    ax_xz.set_title("XZ trajectory after Sim(3) alignment")
+    ax_xy.set_title("XY trajectory after Sim(3) alignment (non-metric)")
+    ax_xz.set_title("XZ trajectory after Sim(3) alignment (non-metric)")
     for axis in (ax_xy, ax_xz):
-        axis.set_xlabel("GT coordinate units")
-        axis.set_ylabel("GT coordinate units")
+        axis.set_xlabel("GT coordinate units (not mm)")
+        axis.set_ylabel("GT coordinate units (not mm)")
         axis.grid(True, alpha=0.3)
         axis.axis("equal")
     handles, labels = ax_xy.get_legend_handles_labels()
     figure.legend(handles, labels, loc="lower center", ncol=max(2, len(labels)))
     figure.suptitle(
-        "Chessboard trajectory-shape comparison (alignment is not metric pose recovery)",
-        fontsize=11,
+        "Chessboard trajectory-shape comparison. Positions are Sim(3)-aligned to GT for "
+        "visualization only; the alignment absorbs scale, so this is NOT metric pose recovery.",
+        fontsize=9.5,
     )
     figure.tight_layout(rect=(0, 0.10, 1, 0.93))
     args.output.parent.mkdir(parents=True, exist_ok=True)

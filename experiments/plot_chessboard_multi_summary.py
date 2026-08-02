@@ -49,10 +49,10 @@ def main() -> None:
 
     ax_rot.set_yscale("log")
     ax_rot.set_ylabel("Relative rotation error, mean (deg, log scale)")
-    ax_rot.set_title("Relative rotation error per sequence")
+    ax_rot.set_title("Relative rotation error per sequence (fair, scale-free metric)")
     ax_ate.set_yscale("log")
-    ax_ate.set_ylabel("Sim(3)-aligned ATE RMSE (GT units, log scale)")
-    ax_ate.set_title("Sim(3)-aligned ATE per sequence")
+    ax_ate.set_ylabel("Sim(3)-aligned ATE RMSE (non-metric, GT coord units)")
+    ax_ate.set_title("Sim(3)-aligned ATE per sequence (NOT mm; shape only)")
     for axis in (ax_rot, ax_ate):
         axis.set_xticks(x)
         axis.set_xticklabels([SEQ_LABELS[s] for s in SEQ_ORDER])
@@ -61,8 +61,10 @@ def main() -> None:
     handles, labels = ax_rot.get_legend_handles_labels()
     figure.legend(handles, labels, loc="lower center", ncol=6, frameon=False)
     figure.suptitle(
-        "Five-sequence checkerboard evaluation (Sim(3)-aligned; identical frames per sequence)",
-        fontsize=11,
+        "Five-sequence checkerboard evaluation. ATE is Sim(3)-aligned and non-metric (not mm) "
+        "because the pseudo-3D transform and monocular baselines are scale-ambiguous; "
+        "rotation error is the fair comparison.",
+        fontsize=9,
     )
     figure.tight_layout(rect=(0, 0.09, 1, 0.94))
     figure.savefig(OUTPUT, dpi=300)

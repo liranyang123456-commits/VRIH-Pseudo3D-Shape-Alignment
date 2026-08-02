@@ -38,8 +38,12 @@ def main() -> None:
     rot: dict[str, dict[str, float]] = defaultdict(dict)
     with SUMMARY.open(encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
-            ate[row["method"]][row["sequence"]] = float(row["ate_sim3_rmse_gt_units"])
-            rot[row["method"]][row["sequence"]] = float(row["relative_rotation_error_mean_deg"])
+            try:
+                ate[row["method"]][row["sequence"]] = float(row["ate_sim3_rmse_gt_units"])
+                rot[row["method"]][row["sequence"]] = float(row["relative_rotation_error_mean_deg"])
+            except (ValueError, TypeError):
+                # sparse-model failure entries (n/a) are omitted from the chart
+                continue
 
     sequences = list(SEQ_LABELS)
     x = np.arange(len(sequences))
@@ -48,24 +52,16 @@ def main() -> None:
 
     for offset, method in enumerate(METHOD_ORDER):
         positions = x + (offset - (len(METHOD_ORDER) - 1) / 2) * width
-        ax_rot.bar(
-            positions,
-            [rot[method][seq] for seq in sequences],
-            width,
-            label=METHOD_LABELS[method],
-        )
-        ax_ate.bar(
-            positions,
-            [ate[method][seq] for seq in sequences],
-            width,
-            label=METHOD_LABELS[method],
-        )
+        rot_vals = [rot[method].get(seq, float("nan")) for seq in sequences]
+        ate_vals = [ate[method].get(seq, float("nan")) for seq in sequences]
+        ax_rot.bar(positions, rot_vals, width, label=METHOD_LABELS[method])
+        ax_ate.bar(positions, ate_vals, width, label=METHOD_LABELS[method])
 
     ax_rot.set_yscale("log")
     ax_rot.set_ylabel("Relative rotation error, mean (deg, log scale)")
-    ax_rot.set_title("Relative rotation error per sequence")
-    ax_ate.set_ylabel("Sim(3)-aligned ATE RMSE (GT units)")
-    ax_ate.set_title("Sim(3)-aligned ATE per sequence")
+    ax_rot.set_title("Relative rotation error per sequence (fair, scale-free metric)")
+    ax_ate.set_ylabel("Sim(3)-aligned ATE RMSE (non-metric, GT coord units)")
+    ax_ate.set_title("Sim(3)-aligned ATE per sequence (NOT mm; shape only)")
     for axis in (ax_rot, ax_ate):
         axis.set_xticks(x)
         axis.set_xticklabels([SEQ_LABELS[seq] for seq in sequences])
@@ -74,8 +70,9 @@ def main() -> None:
     handles, labels = ax_rot.get_legend_handles_labels()
     figure.legend(handles, labels, loc="lower center", ncol=6, frameon=False)
     figure.suptitle(
-        "Six-sequence SCARED evaluation (Sim(3)-aligned; non-metric shape alignment)",
-        fontsize=11,
+        "Six-sequence SCARED evaluation. ATE is Sim(3)-aligned and non-metric (not mm) "
+        "because all methods are scale-ambiguous monocular; rotation error is the fair comparison.",
+        fontsize=9.5,
     )
     figure.tight_layout(rect=(0, 0.09, 1, 0.94))
     figure.savefig(OUTPUT, dpi=300)
