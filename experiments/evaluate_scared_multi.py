@@ -29,6 +29,7 @@ METHODS = {
     "Reloc3r": ("reloc3r_{seq}", "reloc3r_cumulative_4x4.txt"),
     "SIFT": ("sift_{seq}", "sift_cumulative_4x4.txt"),
     "AKAZE": ("akaze_{seq}", "akaze_cumulative_4x4.txt"),
+    "ORB": ("orb_{seq}", "orb_cumulative_4x4.txt"),
     "DetectorFreeSfM": ("detectorfreesfm_{seq}", "detectorfreesfm_cumulative_4x4.txt"),
 }
 
