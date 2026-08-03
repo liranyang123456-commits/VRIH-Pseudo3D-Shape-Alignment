@@ -35,6 +35,9 @@ PROFILES = (
     Profile("SIFT+gradient-mask", 0.75, True, None, None, False),
     Profile("Pseudo3D-dense", 0.90, False, 0.80, 150.0, False),
     Profile("Pseudo3D-balanced", 0.85, False, 0.50, 120.0, False),
+    # Control isolating the pseudo-height descriptor: identical mutual-NN
+    # matching pipeline but no pseudo-height/orientation gating.
+    Profile("SIFT+mutual-gated", 0.75, False, None, None, True),
     Profile("Ours-selective", 0.75, False, 0.35, 75.0, True),
 )
 
@@ -220,9 +223,25 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--scared-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--datasets",
+        type=str,
+        default=None,
+        help="Comma-separated dataset ids to include (e.g. 1,2,3,6,7). "
+        "dataset_5 is excluded in the paper protocol because its released "
+        "stereo calibration shows a systematic 10-20 px epipolar offset "
+        "(near-zero GT precision for every method).",
+    )
     args = parser.parse_args()
+    include = None
+    if args.datasets:
+        include = {f"dataset_{token.strip()}" for token in args.datasets.split(",")}
     rows = []
     for dataset in sorted(args.scared_root.glob("dataset_*")):
+        if dataset.is_dir() is False:
+            continue
+        if include is not None and dataset.name not in include:
+            continue
         for keyframe in sorted(dataset.glob("keyframe_*")):
             if (keyframe / "Left_Image.png").exists():
                 for profile in PROFILES:
@@ -241,22 +260,28 @@ def main() -> None:
             values = np.asarray([float(row[metric]) for row in group], dtype=float)
             result[f"mean_{metric}"] = float(np.nanmean(values))
             result[f"std_{metric}"] = float(np.nanstd(values, ddof=1))
+            # Medians are reported for outlier-prone depth metrics (dense
+            # configurations occasionally fail catastrophically on single
+            # keyframes, which dominates plain means).
+            result[f"median_{metric}"] = float(np.nanmedian(values))
         summary.append(result)
     summary_path = args.output.with_name(args.output.stem + "_summary.csv")
     with summary_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(summary[0]))
         writer.writeheader()
         writer.writerows(summary)
-    figure, axes = plt.subplots(1, 2, figsize=(10, 4))
+    figure, axes = plt.subplots(1, 2, figsize=(10, 4.6))
     for row in summary:
         axes[0].scatter(row["mean_matches"], row["mean_gt_match_precision"], label=row["method"])
-        axes[1].scatter(row["mean_matches"], row["mean_depth_absrel"], label=row["method"])
+        # Depth axis uses the median: plain means are dominated by rare
+        # catastrophic failures of the relaxed configurations.
+        axes[1].scatter(row["mean_matches"], row["median_depth_absrel"], label=row["method"])
     axes[0].set(xlabel="Mean matches per stereo pair", ylabel="GT geometric match precision")
-    axes[1].set(xlabel="Mean matches per stereo pair", ylabel="Triangulated depth AbsRel")
+    axes[1].set(xlabel="Mean matches per stereo pair", ylabel="Median triangulated depth AbsRel")
     for axis in axes:
         axis.grid(alpha=0.3)
-    figure.legend(loc="lower center", ncol=3)
-    figure.tight_layout(rect=(0, 0.13, 1, 1))
+    figure.legend(loc="lower center", ncol=4, fontsize=8)
+    figure.tight_layout(rect=(0, 0.14, 1, 1))
     figure.savefig(args.output.with_suffix(".png"), dpi=300)
 
 

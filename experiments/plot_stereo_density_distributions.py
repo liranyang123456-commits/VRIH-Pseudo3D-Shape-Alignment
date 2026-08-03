@@ -16,6 +16,7 @@ ORDER = (
     "SIFT+gradient-mask",
     "Pseudo3D-dense",
     "Pseudo3D-balanced",
+    "SIFT+mutual-gated",
     "Ours-selective",
 )
 
@@ -25,6 +26,7 @@ LABELS = (
     "Gradient\nmask",
     "Pseudo3D\ndense",
     "Pseudo3D\nbalanced",
+    "SIFT mutual\n+gated",
     "Ours\nselective",
 )
 

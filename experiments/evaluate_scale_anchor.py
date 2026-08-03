@@ -34,7 +34,13 @@ except Exception:  # pragma: no cover
 SCARED = Path(r"E:\MIS_Datasets\SCARED")
 RESULTS = Path(__file__).resolve().parent / "results"
 
-KEYFRAMES = [p for p in sorted(SCARED.glob("dataset_*/keyframe_*")) if (p / "Left_Image.png").exists()]
+# dataset_5 is excluded for consistency with the calibrated stereo protocol
+# (its released stereo calibration is inconsistent; its depth is unused there).
+KEYFRAMES = [
+    p
+    for p in sorted(SCARED.glob("dataset_*/keyframe_*"))
+    if (p / "Left_Image.png").exists() and "dataset_5" not in p.parts
+]
 
 
 def pseudo_height(left: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
