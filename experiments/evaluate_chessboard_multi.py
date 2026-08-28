@@ -144,6 +144,8 @@ def main() -> None:
                 "n_poses": payload["n_poses"],
                 "ate_sim3_rmse": payload["ate_after_sim3_gt_units"]["rmse"],
                 "rel_rot_err_mean_deg": rot["mean"],
+                "rel_rot_err_median_deg": rot["median"],
+                "rot_success_rate_1deg": payload.get("rotation_success_rate_1deg", ""),
                 "rel_tdir_err_mean_deg": tdir["mean"] if tdir else "",
             })
             print(f"[ok] seg100/{seq}/{method} n={payload['n_poses']}")
@@ -177,6 +179,8 @@ def main() -> None:
                 "n_poses": payload["n_poses"],
                 "ate_sim3_rmse": payload["ate_after_sim3_gt_units"]["rmse"],
                 "rel_rot_err_mean_deg": rot["mean"],
+                "rel_rot_err_median_deg": rot["median"],
+                "rot_success_rate_1deg": payload.get("rotation_success_rate_1deg", ""),
                 "rel_tdir_err_mean_deg": tdir["mean"] if tdir else "",
             })
             print(f"[ok] full/{seq}/{method} n={payload['n_poses']}")
@@ -195,6 +199,7 @@ def main() -> None:
             "protocol", "method", "n_sequences",
             "ate_rmse_mean", "ate_rmse_std",
             "rel_rot_err_mean_deg", "rel_rot_err_std_deg",
+            "rel_rot_err_median_deg_mean", "rot_success_rate_1deg_mean",
             "rel_tdir_err_mean_deg", "rel_tdir_err_std_deg",
         ])
         for protocol in ("seg100", "full"):
@@ -204,12 +209,16 @@ def main() -> None:
                     continue
                 ate = [float(r["ate_sim3_rmse"]) for r in sel]
                 rot = [float(r["rel_rot_err_mean_deg"]) for r in sel]
+                rot_med = [float(r["rel_rot_err_median_deg"]) for r in sel if r.get("rel_rot_err_median_deg") not in (None, "")]
+                succ = [float(r["rot_success_rate_1deg"]) for r in sel if r.get("rot_success_rate_1deg") not in (None, "")]
                 tdir = [float(r["rel_tdir_err_mean_deg"]) for r in sel if r["rel_tdir_err_mean_deg"] != ""]
                 std = lambda v: statistics.stdev(v) if len(v) > 1 else 0.0
                 writer.writerow([
                     protocol, method, len(sel),
                     f"{statistics.mean(ate):.3f}", f"{std(ate):.3f}",
                     f"{statistics.mean(rot):.3f}", f"{std(rot):.3f}",
+                    f"{statistics.mean(rot_med):.3f}" if rot_med else "",
+                    f"{statistics.mean(succ):.3f}" if succ else "",
                     f"{statistics.mean(tdir):.3f}" if tdir else "", f"{std(tdir):.3f}" if tdir else "",
                 ])
     print(f"wrote {aggregate}")

@@ -159,6 +159,7 @@ def evaluate(
         },
         "ate_after_sim3_gt_units": summary(ate_errors),
         "relative_rotation_error_deg": summary(rotation_errors),
+        "rotation_success_rate_1deg": float(np.mean(np.asarray(rotation_errors) < 1.0)) if rotation_errors else 0.0,
         "relative_translation_direction_error_deg": (
             summary(translation_direction_errors)
             if translation_direction_errors
