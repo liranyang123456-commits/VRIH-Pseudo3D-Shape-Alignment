@@ -10,14 +10,8 @@ import re
 from pathlib import Path
 
 ROOT = Path(r"E:/elsarticle-template-TMI_Revised")
-import sys as _sys
-
-if len(_sys.argv) > 2:
-    SRC = Path(_sys.argv[1])
-    OUT = Path(_sys.argv[2])
-else:
-    SRC = ROOT / "response.tex"
-    OUT = ROOT / "response_plain.txt"
+SRC = ROOT / "response.tex"
+OUT = ROOT / "response_plain.txt"
 
 SYMBOLS = {
     r"\rightarrow": "->",
@@ -124,16 +118,9 @@ def main() -> None:
     body = body.split(r"\end{document}")[0]
 
     lines_out: list[str] = []
-    center_m = re.search(r"\\begin\{center\}(.*?)\\end\{center\}", body, flags=re.S)
-    if center_m:
-        header_lines = [
-            re.sub(r"\\(Large|large|itshape|bfseries)\s*", "", ln).replace("{}", "").strip()
-            for ln in re.split(r"\\\\(?:\[\d+pt\])?", center_m.group(1))
-            if ln.strip()
-        ]
-        lines_out.extend(clean(h) for h in header_lines)
-    else:
-        lines_out.append("RESPONSE TO REVIEWERS")
+    lines_out.append("RESPONSE TO REVIEWERS")
+    lines_out.append("Manuscript No.: VRIH-D-26-00061")
+    lines_out.append("Nonrigid-Assisted Pseudo-3D Shape Alignment for Endoscopic Image Sequences")
     lines_out.append("")
 
     # split into sections

@@ -9,6 +9,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
+
 ROOT = Path(__file__).resolve().parent
 RESULTS = ROOT / "results"
 
@@ -73,15 +75,13 @@ def main() -> None:
                         {
                             "sequence": seq,
                             "method": method,
-                        "n_poses": n_registered,
-                        "ate_sim3_rmse_gt_units": "n/a (sparse model failed)",
-                        "relative_rotation_error_mean_deg": "n/a",
-                        "relative_rotation_error_median_deg": "n/a",
-                        "rotation_success_rate_1deg": "n/a",
-                        "relative_translation_direction_error_mean_deg": "n/a",
-                    }
-                )
-                continue
+                            "n_poses": n_registered,
+                            "ate_sim3_rmse_gt_units": "n/a (sparse model failed)",
+                            "relative_rotation_error_mean_deg": "n/a",
+                            "relative_translation_direction_error_mean_deg": "n/a",
+                        }
+                    )
+                    continue
                 result.check_returncode()
             payload = json.loads(metrics_path.read_text(encoding="utf-8"))
             n_poses = payload["n_poses"]
@@ -103,17 +103,27 @@ def main() -> None:
                 continue
             rotation = payload["relative_rotation_error_deg"]
             direction = payload["relative_translation_direction_error_deg"]
+            series_rot = payload.get("series", {}).get("rotation_errors_deg", [])
             rows.append(
                 {
                     "sequence": seq,
                     "method": method,
                     "n_poses": payload["n_poses"],
                     "ate_sim3_rmse_gt_units": payload["ate_after_sim3_gt_units"]["rmse"],
+                    "ate_sim3_median_gt_units": payload["ate_after_sim3_gt_units"]["median"],
                     "relative_rotation_error_mean_deg": rotation["mean"],
                     "relative_rotation_error_median_deg": rotation["median"],
-                    "rotation_success_rate_1deg": payload.get("rotation_success_rate_1deg", ""),
+                    "rot_success_1deg": (
+                        float(np.mean([e < 1.0 for e in series_rot])) if series_rot else ""
+                    ),
+                    "rot_success_2deg": (
+                        float(np.mean([e < 2.0 for e in series_rot])) if series_rot else ""
+                    ),
                     "relative_translation_direction_error_mean_deg": (
                         direction["mean"] if direction else ""
+                    ),
+                    "relative_translation_direction_error_median_deg": (
+                        direction["median"] if direction else ""
                     ),
                 }
             )
@@ -131,12 +141,16 @@ def main() -> None:
     for row in rows:
         if not str(row["ate_sim3_rmse_gt_units"]).replace(".", "").isdigit():
             continue
-        entry = aggregate.setdefault(str(row["method"]), {"ate": [], "rot": [], "rot_med": [], "succ": [], "dir": []})
+        entry = aggregate.setdefault(
+            str(row["method"]), {"ate": [], "ate_med": [], "rot": [], "rot_med": [], "s1": [], "s2": [], "dir": []}
+        )
         entry["ate"].append(float(row["ate_sim3_rmse_gt_units"]))
+        entry["ate_med"].append(float(row["ate_sim3_median_gt_units"]))
         entry["rot"].append(float(row["relative_rotation_error_mean_deg"]))
         entry["rot_med"].append(float(row["relative_rotation_error_median_deg"]))
-        if row.get("rotation_success_rate_1deg") not in (None, ""):
-            entry["succ"].append(float(row["rotation_success_rate_1deg"]))
+        if row["rot_success_1deg"] != "":
+            entry["s1"].append(float(row["rot_success_1deg"]))
+            entry["s2"].append(float(row["rot_success_2deg"]))
         if row["relative_translation_direction_error_mean_deg"] != "":
             entry["dir"].append(float(row["relative_translation_direction_error_mean_deg"]))
 
@@ -149,10 +163,12 @@ def main() -> None:
                 "n_sequences",
                 "ate_sim3_rmse_mean",
                 "ate_sim3_rmse_std",
+                "ate_sim3_median_mean",
                 "rel_rot_err_mean_deg",
                 "rel_rot_err_std_deg",
-                "rel_rot_err_median_deg_mean",
-                "rot_success_rate_1deg_mean",
+                "rel_rot_err_median_deg",
+                "rot_success_1deg",
+                "rot_success_2deg",
                 "rel_tdir_err_mean_deg",
                 "rel_tdir_err_std_deg",
             ]
@@ -166,10 +182,12 @@ def main() -> None:
                     len(entry["ate"]),
                     f"{statistics.mean(entry['ate']):.4f}",
                     f"{statistics.stdev(entry['ate']):.4f}" if len(entry["ate"]) > 1 else "0",
+                    f"{statistics.mean(entry['ate_med']):.4f}",
                     f"{statistics.mean(entry['rot']):.4f}",
                     f"{statistics.stdev(entry['rot']):.4f}" if len(entry["rot"]) > 1 else "0",
-                    f"{statistics.mean(entry['rot_med']):.4f}" if entry["rot_med"] else "",
-                    f"{statistics.mean(entry['succ']):.4f}" if entry["succ"] else "",
+                    f"{statistics.mean(entry['rot_med']):.4f}",
+                    f"{statistics.mean(entry['s1']):.3f}" if entry["s1"] else "",
+                    f"{statistics.mean(entry['s2']):.3f}" if entry["s2"] else "",
                     f"{statistics.mean(entry['dir']):.4f}" if entry["dir"] else "",
                     f"{statistics.stdev(entry['dir']):.4f}" if len(entry["dir"]) > 1 else "",
                 ]
