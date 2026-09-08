@@ -147,11 +147,6 @@ def evaluate(
     return {
         "n_poses": len(frames),
         "frame_indices": frames,
-        "series": {
-            "ate_errors": [float(v) for v in ate_errors],
-            "rotation_errors_deg": [float(v) for v in rotation_errors],
-            "translation_direction_errors_deg": [float(v) for v in translation_direction_errors],
-        },
         "trajectory_alignment": {
             "type": "Sim3",
             "scale_pred_to_gt": scale,

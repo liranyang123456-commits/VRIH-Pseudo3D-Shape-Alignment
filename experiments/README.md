@@ -10,11 +10,37 @@ revision. It separates pseudo-3D shape alignment from metric camera-pose recover
   translation-direction error. Sim(3)-aligned ATE is a trajectory-shape measure,
   not metric pose accuracy for a pseudo-height trajectory.
 - `evaluate_contour_hcr.py` and `test_hcr_significance.py`: compute NPC, HPC,
-  HCR, uncertainty, and paired Wilcoxon tests.
+  HCR, uncertainty, and paired Wilcoxon tests (reproduces Table 2).
+- `evaluate_chessboard_multi.py`: evaluates shape alignment on the five
+  checkerboard sequences against calibration ground truth (reproduces Table 3).
+- `evaluate_scared_multi.py`: evaluates shape alignment on the six public SCARED
+  sequences against released camera poses (reproduces Table 4).
+- `prepare_scared_extended.py`: extracts held-out SCARED keyframes from
+  datasets 5, 6, and 7 with released camera-pose metadata (for Table 5).
+- `evaluate_scared_extended.py`: evaluates the pipeline on extended SCARED
+  datasets 5--7 keyframes (reproduces Table 5).
+- `evaluate_scared_abrupt.py`: evaluates the pipeline on the abrupt-motion
+  window of dataset 6 keyframe 1 containing a 6.55-degree jump (reproduces Table 5).
 - `evaluate_stereo_pseudo3d.py`: evaluates the four SIFT/pseudo-height matching
-  variants against released SCARED stereo calibration and depth ground truth.
+  variants against released SCARED stereo calibration and depth ground truth (reproduces Table 6).
 - `evaluate_stereo_pseudo3d_density.py`: sweeps dense, balanced, and selective
   pseudo-height matching profiles to quantify the density--quality tradeoff.
+- `run_scared_pipeline_ablation.py`: evaluates nested geometric back-end configurations
+  (dense flow + Kabsch, + RANSAC, + quality gating) on SCARED (reproduces Table 7).
+- `run_scared_sensitivity.py`: sweeps gradient percentile, correspondence grid stride,
+  pseudo-height scale, and RANSAC threshold (reproduces Table 8).
+- `analyze_condition_stratification.py`: computes six-condition stratification and
+  hard-quartile subsets across 474 SCARED frame pairs (reproduces Table 9).
+- `analyze_self_acquired_cases.py`: evaluates internal alignment diagnostics
+  (Kabsch residual, inlier ratio, gate freezes, HCR) on clinical sequences
+  without pose ground truth (reproduces Table 10).
+- `retrain_ae_variants.py`: retrains the full 225.6M SwinUNetLarge autoencoder
+  under controlled variants (positional encoding: 2D vs (x+y) vs none;
+  diffusion block: on vs off; split: frame vs sequence-level).
+- `run_component_toggles.py`: evaluates direct component toggles (zero-flow
+  control and ICP parameter sweep) on the six SCARED sequences.
+- `analyze_gradient_statistics.py`: measures empirical gradient statistics,
+  Rayleigh test, and threshold stability across 3,482 real endoscopic frames (Figure 4).
 - `run_reloc3r_pairs.py`: runs official Reloc3r pairwise inference and exports a
   scale-ambiguous cumulative trajectory.
 - `run_feature_pose_baseline.py`: calibrated SIFT, AKAZE, and ORB essential-matrix

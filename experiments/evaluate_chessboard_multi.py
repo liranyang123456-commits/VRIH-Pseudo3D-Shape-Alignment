@@ -24,8 +24,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import numpy as np
-
 ROOT = Path(__file__).resolve().parent
 RESULTS = ROOT / "results"
 EVAL_DIR = RESULTS / "chessboard_multi_eval"
@@ -141,18 +139,12 @@ def main() -> None:
                 continue
             rot = payload["relative_rotation_error_deg"]
             tdir = payload["relative_translation_direction_error_deg"]
-            series_rot = payload.get("series", {}).get("rotation_errors_deg", [])
             rows.append({
                 "protocol": "seg100", "sequence": seq, "method": method,
                 "n_poses": payload["n_poses"],
                 "ate_sim3_rmse": payload["ate_after_sim3_gt_units"]["rmse"],
-                "ate_sim3_median": payload["ate_after_sim3_gt_units"]["median"],
                 "rel_rot_err_mean_deg": rot["mean"],
-                "rel_rot_err_median_deg": rot["median"],
-                "rot_success_1deg": float(np.mean([e < 1.0 for e in series_rot])) if series_rot else "",
-                "rot_success_2deg": float(np.mean([e < 2.0 for e in series_rot])) if series_rot else "",
                 "rel_tdir_err_mean_deg": tdir["mean"] if tdir else "",
-                "rel_tdir_err_median_deg": tdir["median"] if tdir else "",
             })
             print(f"[ok] seg100/{seq}/{method} n={payload['n_poses']}")
 
@@ -180,18 +172,12 @@ def main() -> None:
                 continue
             rot = payload["relative_rotation_error_deg"]
             tdir = payload["relative_translation_direction_error_deg"]
-            series_rot = payload.get("series", {}).get("rotation_errors_deg", [])
             rows.append({
                 "protocol": "full", "sequence": seq, "method": method,
                 "n_poses": payload["n_poses"],
                 "ate_sim3_rmse": payload["ate_after_sim3_gt_units"]["rmse"],
-                "ate_sim3_median": payload["ate_after_sim3_gt_units"]["median"],
                 "rel_rot_err_mean_deg": rot["mean"],
-                "rel_rot_err_median_deg": rot["median"],
-                "rot_success_1deg": float(np.mean([e < 1.0 for e in series_rot])) if series_rot else "",
-                "rot_success_2deg": float(np.mean([e < 2.0 for e in series_rot])) if series_rot else "",
                 "rel_tdir_err_mean_deg": tdir["mean"] if tdir else "",
-                "rel_tdir_err_median_deg": tdir["median"] if tdir else "",
             })
             print(f"[ok] full/{seq}/{method} n={payload['n_poses']}")
 
@@ -207,9 +193,8 @@ def main() -> None:
         writer = csv.writer(handle)
         writer.writerow([
             "protocol", "method", "n_sequences",
-            "ate_rmse_mean", "ate_rmse_std", "ate_median_mean",
-            "rel_rot_err_mean_deg", "rel_rot_err_std_deg", "rel_rot_err_median_deg",
-            "rot_success_1deg_pooled", "rot_success_2deg_pooled",
+            "ate_rmse_mean", "ate_rmse_std",
+            "rel_rot_err_mean_deg", "rel_rot_err_std_deg",
             "rel_tdir_err_mean_deg", "rel_tdir_err_std_deg",
         ])
         for protocol in ("seg100", "full"):
@@ -218,18 +203,13 @@ def main() -> None:
                 if not sel:
                     continue
                 ate = [float(r["ate_sim3_rmse"]) for r in sel]
-                ate_med = [float(r["ate_sim3_median"]) for r in sel]
                 rot = [float(r["rel_rot_err_mean_deg"]) for r in sel]
-                rot_med = [float(r["rel_rot_err_median_deg"]) for r in sel]
-                s1 = [float(r["rot_success_1deg"]) for r in sel if r["rot_success_1deg"] != ""]
-                s2 = [float(r["rot_success_2deg"]) for r in sel if r["rot_success_2deg"] != ""]
                 tdir = [float(r["rel_tdir_err_mean_deg"]) for r in sel if r["rel_tdir_err_mean_deg"] != ""]
                 std = lambda v: statistics.stdev(v) if len(v) > 1 else 0.0
                 writer.writerow([
                     protocol, method, len(sel),
-                    f"{statistics.mean(ate):.3f}", f"{std(ate):.3f}", f"{statistics.mean(ate_med):.3f}",
-                    f"{statistics.mean(rot):.3f}", f"{std(rot):.3f}", f"{statistics.mean(rot_med):.3f}",
-                    f"{statistics.mean(s1):.3f}" if s1 else "", f"{statistics.mean(s2):.3f}" if s2 else "",
+                    f"{statistics.mean(ate):.3f}", f"{std(ate):.3f}",
+                    f"{statistics.mean(rot):.3f}", f"{std(rot):.3f}",
                     f"{statistics.mean(tdir):.3f}" if tdir else "", f"{std(tdir):.3f}" if tdir else "",
                 ])
     print(f"wrote {aggregate}")
