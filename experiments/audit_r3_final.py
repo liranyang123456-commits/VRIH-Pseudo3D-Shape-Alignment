@@ -71,6 +71,37 @@ check("2 resp: metadata keyword replacement stated", "``Differentiable rendering
 check("2 resp: five keywords listed verbatim", "Relative motion estimation; Pseudo-3D shape alignment; Robust\nregistration; Non-rigid deformation; Endoscopic surgical navigation" in resp)
 check("2 cover: metadata keyword change stated", "Editorial Manager" in cover and "Robust registration" in cover)
 
+# ---- Comment 1: the response's re-audit claims must match where the terms really occur ----
+_lines = paper.splitlines()
+_secs = []
+for _i, _l in enumerate(_lines, 1):
+    _m = re.match(r"\\(section|subsection)\{", _l)
+    if _m:
+        _secs.append((_i, _m.group(1)))
+
+
+def _sec_of(ln: int) -> str:
+    s = ss = 0
+    for i, kind in _secs:
+        if i > ln:
+            break
+        if kind == "section":
+            s, ss = s + 1, 0
+        else:
+            ss += 1
+    return f"{s}.{ss}" if ss else f"{s}"
+
+
+def _secs_with(term: str) -> set[str]:
+    return {_sec_of(i) for i, l in enumerate(_lines, 1) if re.search(term, l, flags=re.I)}
+
+
+check("1 paper: 'mesh registration' no longer occurs", not _secs_with("mesh registration"))
+check("1 paper: 'end-to-end' occurs exactly in Secs 1, 3.2, 4.1, 4.2, 4.5, 5", _secs_with("end-to-end") == {"1", "3.2", "4.1", "4.2", "4.5", "5"})
+check("1 paper: 'differentiable' occurs exactly in Secs 1, 2, 3", _secs_with("differentiable") == {"1", "2", "3"})
+check("1 resp: end-to-end attribution names Sec 4.1 network and DetectorFreeSfM", "descriptor autoencoder as a network (Section~4.1)" in resp and "DetectorFreeSfM baseline, Sections~4.2 and~5" in resp)
+check("1 resp: differentiable attribution includes the Methods negation", "explicit negation in the Methods overview" in resp)
+
 # ---- Highlight colour consistency (blue in R3; no stale 'dark red' legend) ----
 check("colour: markedup defines revchange as blue", r"\definecolor{revchange}{RGB}{0,70,180}" in marked)
 check("colour: response defines changecolor as the same blue", r"\definecolor{changecolor}{RGB}{0,70,180}" in resp)
